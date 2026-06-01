@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Small Tool</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<style type="text/css">
+    .subnet-card {
+        border: 1px solid #d6e0ec;
+        border-radius: 4px;
+        margin-top: 8px;
+        background: #ffffff;
+    }
+    .subnet-header {
+        background: #f4f8fc;
+        border-bottom: 1px solid #d6e0ec;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: #2c5b9b;
+        font-weight: bold;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+    }
+    .subnet-body {
+        padding: 14px 14px 6px 14px;
+    }
+    .subnet-row {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
+    .subnet-label {
+        width: 70px;
+        text-align: right;
+        font-size: 13px;
+        color: #333;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    .subnet-octet {
+        width: 60px;
+        height: 28px;
+        text-align: center;
+        margin-right: 8px;
+        padding: 2px 4px;
+        font-size: 13px;
+        font-family: Menlo, Consolas, monospace;
+    }
+    .subnet-octet.short {
+        width: 50px;
+    }
+    .subnet-cidr {
+        width: 64px;
+        height: 28px;
+        text-align: center;
+        margin-right: 12px;
+        padding: 2px 4px;
+        font-size: 13px;
+        font-family: Menlo, Consolas, monospace;
+    }
+    .subnet-card .form-control[readonly] {
+        background: #fafafa;
+        color: #555;
+    }
+    .subnet-footer {
+        background: #f4f8fc;
+        border-top: 1px solid #d6e0ec;
+        padding: 8px 14px;
+        font-size: 12px;
+        color: #6c757d;
+        line-height: 1.7;
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+    }
+    .err-tip {
+        color: #d9534f;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+</style>
+<body style="width:760px;">
+<nav class="navbar navbar-default" id="navbarHeader">
+    <a href="popup.html" class="navbar-back" id="goback"> <span class="goback"></span> 返回工具列表</a>
+    <a class="navbar-brand pull-right" href="#" id="title_btn">子网掩码计算</a>
+</nav>
+<div class="tool-body" id="toolBody" style="padding:0px 10px 10px 10px;">
+    <div class="subnet-card">
+        <div class="subnet-header">网络和IP地址计算器</div>
+        <div class="subnet-body">
+            <div class="subnet-row">
+                <span class="subnet-label">输入IP</span>
+                <input type="text" id="ip_0" class="form-control subnet-octet" maxlength="3" value="10" />
+                <input type="text" id="ip_1" class="form-control subnet-octet" maxlength="3" value="0"  />
+                <input type="text" id="ip_2" class="form-control subnet-octet" maxlength="3" value="0"  />
+                <input type="text" id="ip_3" class="form-control subnet-octet" maxlength="3" value="5"  />
+                <span class="subnet-label" style="width:60px;">掩码位</span>
+                <input type="text" id="cidr"  class="form-control subnet-cidr"  maxlength="2" value="24" />
+                <input type="button" id="calc_btn"  value="计算" class="btn btn-sm btn-info" />&nbsp;
+                <input type="button" id="clear_btn" value="清空" class="btn btn-sm btn-info" />
+                <span class="err-tip" id="err_tip"></span>
+            </div>
+        </div>
+
+        <div class="subnet-body" style="border-top:1px solid #eef2f7;">
+            <div class="subnet-row">
+                <span class="subnet-label">可用IP</span>
+                <input type="text" id="usable_count" class="form-control subnet-octet short" style="width:160px;" readonly />
+            </div>
+            <div class="subnet-row">
+                <span class="subnet-label">掩码</span>
+                <input type="text" id="mask_0" class="form-control subnet-octet" readonly />
+                <input type="text" id="mask_1" class="form-control subnet-octet" readonly />
+                <input type="text" id="mask_2" class="form-control subnet-octet" readonly />
+                <input type="text" id="mask_3" class="form-control subnet-octet" readonly />
+            </div>
+            <div class="subnet-row">
+                <span class="subnet-label">网络</span>
+                <input type="text" id="net_0" class="form-control subnet-octet" readonly />
+                <input type="text" id="net_1" class="form-control subnet-octet" readonly />
+                <input type="text" id="net_2" class="form-control subnet-octet" readonly />
+                <input type="text" id="net_3" class="form-control subnet-octet" readonly />
+            </div>
+            <div class="subnet-row">
+                <span class="subnet-label">第一可用</span>
+                <input type="text" id="first_0" class="form-control subnet-octet" readonly />
+                <input type="text" id="first_1" class="form-control subnet-octet" readonly />
+                <input type="text" id="first_2" class="form-control subnet-octet" readonly />
+                <input type="text" id="first_3" class="form-control subnet-octet" readonly />
+            </div>
+            <div class="subnet-row">
+                <span class="subnet-label">最后可用</span>
+                <input type="text" id="last_0" class="form-control subnet-octet" readonly />
+                <input type="text" id="last_1" class="form-control subnet-octet" readonly />
+                <input type="text" id="last_2" class="form-control subnet-octet" readonly />
+                <input type="text" id="last_3" class="form-control subnet-octet" readonly />
+            </div>
+            <div class="subnet-row">
+                <span class="subnet-label">广播</span>
+                <input type="text" id="bcast_0" class="form-control subnet-octet" readonly />
+                <input type="text" id="bcast_1" class="form-control subnet-octet" readonly />
+                <input type="text" id="bcast_2" class="form-control subnet-octet" readonly />
+                <input type="text" id="bcast_3" class="form-control subnet-octet" readonly />
+            </div>
+        </div>
+
+        <div class="subnet-footer">
+            显示网络，广播，第一次和最后一个给定的网络地址<br/>
+            在网络掩码"位格式"也被称为CIDR格式（CIDR=无类别域间路由选择）。
+        </div>
+    </div>
+</div>
+<div class="text-muted small" style="padding-right: 15px; line-height: 30px;background: #f8f8f8; text-align:center;" id="navbarFooter">
+    <a href="https://github.com/lanjingling/small_tool" target="_blank">©2021 Small Tool V1.0.0</a>
+</div>
+<script type="text/javascript" src="js/jquery-1.12.4.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/subnet.js"></script>
+</body>
+</html>

@@ -25,6 +25,11 @@
                 URL的编解码
            </a>
         </li>
+        <li>
+            <a href="#md5_tab" data-toggle="tab">
+                MD5加密
+           </a>
+        </li>
     </ul>
     <div class="tab-content">
         <div class="tab-pane fade in active" id="base64_tab" style="padding:5px">
@@ -77,6 +82,38 @@
                 </ul>
             </div>
         </div>
+
+        <div class="tab-pane fade" id="md5_tab" style="padding:5px 5px 2px 5px">
+            <div class="form-group">
+                <textarea class="form-control" rows="6" style="line-height:15px;overflow:scroll;" id="md5_val" placeholder="输入要加密的字符串"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+                <input type="button" value="MD5加密" class="btn btn-sm btn-info" id="md5_encode_btn"/>
+                &nbsp;&nbsp;
+                <input type="button" value="拷贝32位小写" class="btn btn-sm btn-success" id="md5_copy_32l_btn"/>
+                &nbsp;&nbsp;
+                <input type="button" id="md5_clean_btn" value="清空结果" class="btn btn-sm btn-danger pull-right"/>
+            </div>
+            <div class="form-group" style="margin-bottom:6px">
+                <label style="font-size:12px;margin-bottom:2px">32位小写</label>
+                <input type="text" class="form-control" id="md5_res_32_lower" readonly style="font-family:Menlo,Consolas,monospace;font-size:12px;"/>
+            </div>
+            <div class="form-group" style="margin-bottom:6px">
+                <label style="font-size:12px;margin-bottom:2px">32位大写</label>
+                <input type="text" class="form-control" id="md5_res_32_upper" readonly style="font-family:Menlo,Consolas,monospace;font-size:12px;"/>
+            </div>
+            <div class="form-group" style="margin-bottom:6px">
+                <label style="font-size:12px;margin-bottom:2px">16位小写</label>
+                <input type="text" class="form-control" id="md5_res_16_lower" readonly style="font-family:Menlo,Consolas,monospace;font-size:12px;"/>
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+                <label style="font-size:12px;margin-bottom:2px">16位大写</label>
+                <input type="text" class="form-control" id="md5_res_16_upper" readonly style="font-family:Menlo,Consolas,monospace;font-size:12px;"/>
+            </div>
+            <div style="font-size:11px">
+                <b>说明：</b>MD5 是常见的不可逆哈希算法，输出 128 位（32 位十六进制）。16 位结果通常取 32 位结果的中间 16 位（第 9~24 位）。本工具在浏览器本地进行计算，输入数据不会上传到任何服务器。
+            </div>
+        </div>
     </div>
 </div>
 <div class="text-muted small" style="padding-right: 15px; line-height: 30px;background: #f8f8f8; text-align:right;" id="navbarFooter">
@@ -84,6 +121,7 @@
 </div>
 <script type="text/javascript" src="js/jquery-1.12.4.js"></script>
 <script type="text/javascript" src="js/base64.min.js"></script>
+<script type="text/javascript" src="js/md5.min.js"></script>
 <script type="text/javascript" src="js/bootstrap.min.js"></script>
 <script type="text/javascript" src="js/common.js"></script>
 <script type="text/javascript" src="js/base64.js"></script>

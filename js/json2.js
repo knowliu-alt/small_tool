@@ -87,6 +87,91 @@ $(document).ready(function(){
         $("#json-display").find('a.json-toggle').click();
     });
 
+    $("#copy_btn").click(function(){
+        var $display = $("#json-display");
+        // 取出纯文本 JSON，优先尝试格式化输出（4 空格缩进），失败则回退到原文
+        var $clone = $display.clone(false);
+        $clone.find("a.json-placeholder").remove();
+        $clone.find("div.error").remove();
+        var rawText = $clone.text();
+        var plainText = rawText;
+        try {
+            plainText = JSON.stringify(JSON.parse(rawText), null, 4);
+        } catch (e) {
+            plainText = rawText;
+        }
+
+        // 构造带 inline style 的 HTML，确保粘贴到富文本编辑器时保留颜色
+        var $htmlClone = $display.clone(true);
+        $htmlClone.find("a.json-placeholder").remove();
+        $htmlClone.find("div.error").remove();
+        // jquery.json-viewer 默认配色（与 jquery.json-viewer.min.css 一致）
+        var styleMap = {
+            'json-string':  'color:#0B7500;',
+            'json-literal': 'color:#1A01CC;font-weight:bold;',
+            'json-key':     'color:#000000;font-weight:bold;'
+        };
+        $.each(styleMap, function(cls, css){
+            $htmlClone.find('.' + cls).each(function(){
+                var existing = $(this).attr('style') || '';
+                $(this).attr('style', existing + css);
+            });
+        });
+        // 折叠/展开按钮、占位符等不需要带过去
+        $htmlClone.find('a.json-toggle').remove();
+        // 用 <pre> 包一层，保留缩进与换行
+        var htmlContent = '<pre style="font-family:Menlo,Consolas,monospace;background:#1c2833;color:#fff;padding:10px;border-radius:4px;white-space:pre;">'
+            + $htmlClone.html()
+            + '</pre>';
+
+        function fallbackCopy() {
+            // 降级：用一个临时 contenteditable 元素 + execCommand('copy')
+            var tmp = document.createElement('div');
+            tmp.contentEditable = 'true';
+            tmp.style.position = 'fixed';
+            tmp.style.left = '-9999px';
+            tmp.innerHTML = htmlContent;
+            document.body.appendChild(tmp);
+            var range = document.createRange();
+            range.selectNodeContents(tmp);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try { document.execCommand('copy'); } catch (e) {}
+            sel.removeAllRanges();
+            document.body.removeChild(tmp);
+        }
+
+        if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+            try {
+                var item = new ClipboardItem({
+                    'text/html':  new Blob([htmlContent], {type: 'text/html'}),
+                    'text/plain': new Blob([plainText],   {type: 'text/plain'})
+                });
+                navigator.clipboard.write([item]).then(function(){
+                    flashCopyBtn(true);
+                }).catch(function(){
+                    fallbackCopy();
+                    flashCopyBtn(true);
+                });
+            } catch (e) {
+                fallbackCopy();
+                flashCopyBtn(true);
+            }
+        } else {
+            fallbackCopy();
+            flashCopyBtn(true);
+        }
+    });
+
+    function flashCopyBtn(ok) {
+        var $btn = $("#copy_btn");
+        var origVal = $btn.data('origVal') || $btn.val();
+        $btn.data('origVal', origVal);
+        $btn.val(ok ? '已拷贝' : '拷贝失败');
+        setTimeout(function(){ $btn.val(origVal); }, 1200);
+    }
+
 
     $("#clean_btn").click(function(){
         $("#json-display").empty();

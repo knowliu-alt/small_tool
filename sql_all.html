@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SQL格式化 - Small Tool</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<style type="text/css">
+    #sql-display {
+        border: 1px solid #000;
+        margin: 0;
+        padding: 8px 15px;
+        min-height: 600px;
+        background: #1c2833;
+        color: #f5f5f5;
+        font-family: Menlo, Consolas, "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.55;
+        white-space: pre;
+        overflow: auto;
+        position: relative; /* 让 .paren-guide 相对 #sql-display 定位 */
+    }
+    /* 简易 SQL 高亮配色 */
+    #sql-display .sql-keyword  { color: #5dade2; font-weight: bold; }
+    #sql-display .sql-function { color: #f5b041; }
+    #sql-display .sql-string   { color: #58d68d; }
+    #sql-display .sql-number   { color: #f1948a; }
+    #sql-display .sql-comment  { color: #95a5a6; font-style: italic; }
+    #sql-display .sql-operator { color: #ec7063; }
+    #sql-display .sql-punct    { color: #ffffff; }
+    #sql-display .error        { color: #ff6b6b; margin-top: 8px; }
+
+    /* 彩虹括号：按嵌套深度循环着色（VSCode 默认风格） */
+    #sql-display .sql-paren            { cursor: pointer; font-weight: bold; }
+    #sql-display .sql-paren.depth-0    { color: #ffd700; }
+    #sql-display .sql-paren.depth-1    { color: #da70d6; }
+    #sql-display .sql-paren.depth-2    { color: #179fff; }
+    #sql-display .sql-paren.depth-3    { color: #ffd700; }
+    #sql-display .sql-paren.depth-4    { color: #da70d6; }
+    #sql-display .sql-paren.depth-5    { color: #179fff; }
+    /* 配对高亮 */
+    #sql-display .sql-paren.match {
+        background: #ffe066;
+        color: #1c2833 !important;
+        border-radius: 2px;
+        padding: 0 1px;
+        outline: 1px solid #ffb800;
+    }
+    /* 未匹配括号 */
+    #sql-display .sql-paren.unmatched {
+        color: #fff;
+        background: #e74c3c;
+        border-radius: 2px;
+        padding: 0 1px;
+    }
+
+    /* 跨行括号配对引导线（虚线） */
+    #sql-display .paren-guide {
+        border-left: 1px dashed #ffb800;
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0.85;
+    }
+    ::-webkit-scrollbar {
+        padding-left: 1px;
+        background-color: #fafafa;
+        overflow: visible;
+        width: 10px;
+        height: 8px;
+    }
+</style>
+<body>
+<div class="text-muted small navbar navbar-fixed-top" style="line-height: 30px;background: #f8f8f8; text-align:center;" id="navbarFooter">
+    <img src="img/icon_16.png">&nbsp;码农小工具箱
+</div>
+<div class="tool-body" id="toolBody" style="padding: 40px 20px 0px 20px;">
+    <div class="form-group" style="margin-bottom:8px">
+        <input type="button" id="format_btn"   value="格式化"   class="btn btn-sm btn-info" />&nbsp;
+        <input type="button" id="compress_btn" value="压缩"     class="btn btn-sm btn-info" />&nbsp;
+        <input type="button" id="upper_btn"    value="关键字大写" class="btn btn-sm btn-info" />&nbsp;
+        <input type="button" id="lower_btn"    value="关键字小写" class="btn btn-sm btn-info" />&nbsp;
+        <input type="button" id="copy_btn"     value="拷贝"     class="btn btn-sm btn-success" />&nbsp; &nbsp;
+        <input type="button" id="clean_btn"    value="清空结果"  class="btn btn-sm btn-danger pull-right" />
+    </div>
+    <div class="form-group" style="margin-bottom:6px;font-size:12px;">
+        <label style="font-weight:normal;margin-right:6px;">方言：</label>
+        <select id="dialect_select" class="form-control input-sm" style="display:inline-block;width:auto;height:26px;padding:2px 6px;font-size:12px;">
+            <option value="postgresql">PostgreSQL（兼容 ClickHouse，推荐）</option>
+            <option value="mysql">MySQL</option>
+            <option value="sqlite">SQLite</option>
+            <option value="bigquery">BigQuery</option>
+            <option value="spark">Spark</option>
+            <option value="trino">Trino / Presto</option>
+            <option value="snowflake">Snowflake</option>
+            <option value="redshift">Redshift</option>
+            <option value="mariadb">MariaDB</option>
+            <option value="tidb">TiDB</option>
+            <option value="hive">Hive</option>
+            <option value="db2">DB2</option>
+            <option value="plsql">PL/SQL (Oracle)</option>
+            <option value="transactsql">T-SQL (SQL Server)</option>
+            <option value="sql">通用 SQL</option>
+            <option value="simple">轻量自研（无依赖）</option>
+        </select>
+        <label style="font-weight:normal;margin-left:12px;margin-right:6px;">关键字：</label>
+        <select id="kwcase_select" class="form-control input-sm" style="display:inline-block;width:auto;height:26px;padding:2px 6px;font-size:12px;">
+            <option value="preserve">保持原样</option>
+            <option value="upper">大写</option>
+            <option value="lower">小写</option>
+        </select>
+        <label style="font-weight:normal;margin-left:12px;margin-right:6px;">行宽：</label>
+        <select id="width_select" class="form-control input-sm" style="display:inline-block;width:auto;height:26px;padding:2px 6px;font-size:12px;">
+            <option value="80">80</option>
+            <option value="100" selected>100</option>
+            <option value="120">120</option>
+            <option value="160">160</option>
+        </select>
+    </div>
+    <hr style="margin-top: 8px;margin-bottom: 8px;">
+    <div class="form-group">
+        <pre id="sql-display" contenteditable="true"></pre>
+    </div>
+    <div id="sql_all"></div>
+</div>
+<div class="text-muted small" style="padding-right: 15px; line-height: 30px;background: #f8f8f8; text-align:center;" id="navbarFooter">
+    <a href="https://github.com/lanjingling/small_tool" target="_blank">©2021 Small Tool V1.0.0</a>
+</div>
+<script type="text/javascript" src="js/jquery-1.12.4.js"></script>
+<script type="text/javascript" src="js/lib/sql-formatter.min.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/sql.js"></script>
+</body>
+</html>
