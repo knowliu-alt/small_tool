@@ -368,6 +368,7 @@
         this.html += "</div>";
         this.e.append(this.html);
         this.lunarDay();
+        this.lunarDayAdj();
         rightArea(this.Y, this.M);
     };
 
@@ -375,6 +376,12 @@
     DateTable.prototype.monthDays = function () {
         if ((this.M == 2) && (this.Y % 400 == 0 || (this.Y % 100 != 0 && this.Y % 4 == 0))) return 29;
         else return calendar.solarMonth[this.M - 1];
+    }
+
+    /* 获取任意年月的天数 */
+    DateTable.prototype.monthDaysOf = function (Y, M) {
+        if ((M == 2) && (Y % 400 == 0 || (Y % 100 != 0 && Y % 4 == 0))) return 29;
+        else return calendar.solarMonth[M - 1];
     }
 
     /* 获取左边区域的头部 */
@@ -411,9 +418,43 @@
         var day = 0;
         var W = this.W;
         var color = "";
-        for (i = 0; i < this.count * 7; i += 1) {
-            if (i < this.W - 1 || i >= this.days + this.W - 1) this.html += "<div class=\"days1\"></div>";
-            else {
+
+        // 计算上月信息
+        this.prevY = this.M === 1 ? this.Y - 1 : this.Y;
+        this.prevM = this.M === 1 ? 12 : this.M - 1;
+        this.prevDays = this.monthDaysOf(this.prevY, this.prevM);
+        this.prevStart = this.W > 1 ? this.prevDays - (this.W - 2) : this.prevDays + 1;
+
+        // 计算下月信息
+        this.nextY = this.M === 12 ? this.Y + 1 : this.Y;
+        this.nextM = this.M === 12 ? 1 : this.M + 1;
+        this.nextCount = 0;
+
+        var nextDay = 1;
+        for (var i = 0; i < this.count * 7; i += 1) {
+            var colWeekday = (i % 7) + 1; // 1=周一 … 6=周六 7=周日
+            var adjColor = (colWeekday === 6 || colWeekday === 7) ? "red" : "#000";
+
+            if (i < this.W - 1) {
+                // 上月末尾日期
+                var prevDay = this.prevStart + i;
+                this.html += "<div class=\"days_adj\" id=\"adj_prev_" + prevDay +
+                    "\" data-adj-y=\"" + this.prevY + "\" data-adj-m=\"" + this.prevM +
+                    "\" data-adj-d=\"" + prevDay + "\">" +
+                    "<div class=\"num\" style=\"color:" + adjColor + ";\">" +
+                    (prevDay > 9 ? prevDay : ("0" + prevDay)) +
+                    "</div><div class=\"lunar\" id=\"lunar_adj_prev_" + prevDay + "\"></div></div>";
+            } else if (i >= this.days + this.W - 1) {
+                // 下月开头日期
+                this.html += "<div class=\"days_adj\" id=\"adj_next_" + nextDay +
+                    "\" data-adj-y=\"" + this.nextY + "\" data-adj-m=\"" + this.nextM +
+                    "\" data-adj-d=\"" + nextDay + "\">" +
+                    "<div class=\"num\" style=\"color:" + adjColor + ";\">" +
+                    (nextDay > 9 ? nextDay : ("0" + nextDay)) +
+                    "</div><div class=\"lunar\" id=\"lunar_adj_next_" + nextDay + "\"></div></div>";
+                nextDay++;
+                this.nextCount++;
+            } else {
                 day = i + 2 - this.W;
                 if (W == 6 || W == 7) color = "red";
                 else color = "#000";
@@ -489,6 +530,68 @@
                     else { lunar[0] = 1; }
                 }
             } else { lunar[3] += 1; }
+        }
+    };
+
+    /* 渲染邻月（上月/下月）日期格子的农历信息 */
+    DateTable.prototype.lunarDayAdj = function () {
+        var self = this;
+
+        function renderAdj(Y, M, startDay, endDay, idPrefix) {
+            if (startDay > endDay) return;
+            var lunar = calendar.calendarConvert(Y, M, startDay);
+            var info = calendar.getLunarYearDays(lunar[1]);
+            var tm = M - 1;
+            var tmp1 = sTerm(Y, tm * 2);     // 1-indexed
+            var tmp2 = sTerm(Y, tm * 2 + 1); // 1-indexed
+
+            for (var d = startDay; d <= endDay; d++) {
+                var temp = "", solarTerms = "";
+                if (lunar[3] === 1) {
+                    temp = calendar.lunarMonthStr[lunar[2] - 1] + "月";
+                    if (lunar[0] === 1) temp = "闰" + temp;
+                } else if (lunar[3] == 10) {
+                    temp = "初十";
+                } else {
+                    temp = calendar.lunarDayStrFirst[parseInt(lunar[3] / 10)] + calendar.lunarDayStrLast[lunar[3] % 10];
+                }
+                if (tmp1 == d) solarTerms = calendar.solarTerm[tm * 2];
+                if (tmp2 == d) solarTerms = calendar.solarTerm[tm * 2 + 1];
+                temp = calendar.lunarFestival[lunar[2] + "-" + lunar[3]] ||
+                       calendar.gregorianFestival[M + "-" + d] ||
+                       solarTerms || temp;
+                $("#" + idPrefix + d).append(temp);
+                if (calendar.lunarFestival[lunar[2] + "-" + lunar[3]] || calendar.gregorianFestival[M + "-" + d]) {
+                    $("#" + idPrefix + d).css("color", "red");
+                } else if (solarTerms !== "") {
+                    $("#" + idPrefix + d).css("color", "#42962e");
+                }
+                // 推进农历日期
+                var flag = 0;
+                if (info.leapMonth[0] === lunar[2] && lunar[0] == 1) { flag = info.leapMonth[1]; }
+                else flag = info.lunarMonth[lunar[2] - 1] === 0 ? 29 : 30;
+                if (lunar[3] + 1 > flag) {
+                    lunar[3] = 1;
+                    if (lunar[2] !== info.leapMonth[0]) {
+                        if (lunar[2] + 1 > 12) { lunar[1] += 1; lunar[2] = 1; info = calendar.getLunarYearDays(lunar[1]); }
+                        else lunar[2] += 1;
+                    } else {
+                        if (lunar[0] === 1) {
+                            if (lunar[2] + 1 > 12) { lunar[1] += 1; lunar[2] = 1; info = calendar.getLunarYearDays(lunar[1]); }
+                            else { lunar[2] += 1; lunar[0] = 0; }
+                        } else { lunar[0] = 1; }
+                    }
+                } else { lunar[3] += 1; }
+            }
+        }
+
+        // 渲染上月末尾几天
+        if (this.W > 1) {
+            renderAdj(this.prevY, this.prevM, this.prevStart, this.prevDays, "lunar_adj_prev_");
+        }
+        // 渲染下月开头几天
+        if (this.nextCount > 0) {
+            renderAdj(this.nextY, this.nextM, 1, this.nextCount, "lunar_adj_next_");
         }
     };
 
@@ -702,6 +805,16 @@
             ClickDays = $(this).attr("id").split("days")[1];
             rightArea(Y, M);
         });
+        // 点击邻月日期跳转到对应月份
+        $(".days_adj").click(function () {
+            var adjY = parseInt($(this).data("adj-y"));
+            var adjM = parseInt($(this).data("adj-m"));
+            var adjD = parseInt($(this).data("adj-d"));
+            ClickDays = adjD;
+            $(e).empty();
+            options.date = new Date(adjY + "/" + adjM + "/" + adjD);
+            createTable(options, e);
+        });
         // 右击日期事件
         if (isclick) {
             $(".days").contextmenu(function (e) {
@@ -809,6 +922,7 @@
         $(".week").css("width", parseInt((width * rate - 16) / 7) + "px").css("height", parseInt((height - 16) / (count + 1) * 0.4) + "px");
         $(".days").css("width", parseInt((width * rate - 16) / 7 - 2) + "px").css("height", parseInt((height - 16) / (count + 1) - 2.5) + "px");
         $(".days1").css("width", parseInt((width * rate - 16) / 7 - 2) + "px").css("height", parseInt((height - 16) / (count + 1) - 2.5) + "px");
+        $(".days_adj").css("width", parseInt((width * rate - 16) / 7 - 2) + "px").css("height", parseInt((height - 16) / (count + 1) - 2.5) + "px");
         $(".num").css("line-height", parseInt((height - 16) / (count + 1)) / 2 + "px");
         $("#days" + ClickDays).addClass("selected_day");
         //当前时间样式

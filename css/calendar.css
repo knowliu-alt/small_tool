@@ -266,6 +266,32 @@ body {
     margin:1px;
 }
 
+/* 日历左边区域  邻月（上月/下月）日期格子 */
+
+.calendar .leftArea .days_adj {
+    float: left;
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin: 1px;
+    opacity: 0.32;
+}
+
+.calendar .leftArea .days_adj:hover {
+    opacity: 0.55;
+    border: 1px solid #BDBFC8;
+    border-radius: 9px;
+}
+
+.calendar .leftArea .days_adj .num {
+    color: #555 !important;
+}
+
+.calendar .leftArea .days_adj .lunar {
+    color: #888 !important;
+}
+
 
 /* 日历左边区域  天 上半部的数字 */
 
